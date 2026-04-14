@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import nexolLogo from '@/assets/nexolpay-logo.png';
 
 export default function Signup() {
   const [step, setStep] = useState<'register' | 'kyc' | 'done'>('register');
@@ -90,9 +91,7 @@ export default function Signup() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center mb-10">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary font-bold text-primary-foreground text-2xl mb-4">
-            N
-          </div>
+          <img src={nexolLogo} alt="NexolPay" className="h-16 w-16 rounded-2xl mb-4" />
           <h1 className="text-2xl font-bold text-foreground">NexolPay</h1>
           <p className="text-muted-foreground text-sm mt-1">
             {step === 'register' ? 'Create your account' : 'Complete KYC verification'}
