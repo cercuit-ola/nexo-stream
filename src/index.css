@@ -2,95 +2,58 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 0 0% 4%;
+    --foreground: 0 0% 100%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 210 30% 11%;
+    --card-foreground: 0 0% 100%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 210 30% 11%;
+    --popover-foreground: 0 0% 100%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 156 100% 43%;
+    --primary-foreground: 0 0% 4%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --primary-bright: 156 100% 50%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --secondary: 210 20% 15%;
+    --secondary-foreground: 0 0% 100%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --muted: 160 15% 20%;
+    --muted-foreground: 160 15% 55%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --accent: 156 100% 43%;
+    --accent-foreground: 0 0% 4%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --destructive: 348 100% 63%;
+    --destructive-foreground: 0 0% 100%;
 
-    --radius: 0.5rem;
+    --gold: 42 100% 70%;
+    --gold-foreground: 0 0% 4%;
 
-    --sidebar-background: 0 0% 98%;
+    --amber: 42 100% 50%;
+    --amber-foreground: 0 0% 4%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    --border: 156 100% 43% / 0.15;
+    --input: 210 20% 18%;
+    --ring: 156 100% 43%;
 
-    --sidebar-primary: 240 5.9% 10%;
+    --radius: 1rem;
 
-    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-background: 210 30% 7%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 156 100% 43%;
+    --sidebar-primary-foreground: 0 0% 4%;
+    --sidebar-accent: 156 100% 43% / 0.12;
+    --sidebar-accent-foreground: 156 100% 43%;
+    --sidebar-border: 156 100% 43% / 0.1;
+    --sidebar-ring: 156 100% 43%;
 
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --card-accent-bar: 156 100% 43%;
   }
 }
 
@@ -100,6 +63,66 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .font-mono-numbers {
+    font-family: 'Space Mono', monospace;
+  }
+}
+
+@layer components {
+  .nexol-card {
+    @apply relative bg-card rounded-2xl overflow-hidden;
+    border: 1px solid hsl(var(--border));
+  }
+
+  .nexol-card::before {
+    content: '';
+    @apply absolute top-0 left-0 right-0 h-[3px];
+    background: hsl(var(--primary));
+  }
+
+  .nexol-btn-primary {
+    @apply bg-primary text-primary-foreground font-semibold rounded-full px-8 py-3 
+           hover:brightness-110 transition-all duration-200 active:scale-[0.98];
+  }
+
+  .nexol-btn-outline {
+    @apply border border-primary/30 text-primary rounded-full px-8 py-3
+           hover:bg-primary/10 transition-all duration-200;
+  }
+
+  .nexol-input {
+    @apply bg-input border border-border rounded-xl px-4 py-3 text-foreground 
+           placeholder:text-muted-foreground focus:outline-none focus:ring-2 
+           focus:ring-primary/40 transition-all w-full;
+  }
+
+  .nexol-badge-pending {
+    @apply inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium
+           bg-amber/20 text-amber;
+  }
+
+  .nexol-badge-success {
+    @apply inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium
+           bg-primary/20 text-primary;
+  }
+
+  .nexol-badge-error {
+    @apply inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium
+           bg-destructive/20 text-destructive;
+  }
+
+  .nexol-stat-card {
+    @apply nexol-card p-6;
+  }
+
+  .kyc-banner {
+    @apply w-full px-4 py-3 text-sm font-medium text-center;
+    background: hsl(var(--amber) / 0.15);
+    color: hsl(var(--amber));
+    border-bottom: 1px solid hsl(var(--amber) / 0.3);
   }
 }
