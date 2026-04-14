@@ -5,6 +5,7 @@ import {
   Gift, FileText, Settings, LogOut, Bell, Menu, X
 } from 'lucide-react';
 import { useState } from 'react';
+import nexolLogo from '@/assets/nexolpay-logo.png';
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Overview', end: true },
@@ -41,9 +42,7 @@ export function DashboardLayout() {
       `}>
         {/* Logo */}
         <div className="flex items-center gap-3 px-6 py-5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary font-bold text-primary-foreground text-lg">
-            N
-          </div>
+          <img src={nexolLogo} alt="NexolPay" className="h-9 w-9 rounded-xl" />
           <span className="text-lg font-bold text-foreground">NexolPay</span>
           <button className="ml-auto lg:hidden" onClick={() => setMobileOpen(false)}>
             <X className="h-5 w-5 text-muted-foreground" />
