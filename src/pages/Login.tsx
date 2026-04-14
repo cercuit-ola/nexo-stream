@@ -54,6 +54,11 @@ export default function Login() {
             className="nexol-btn-primary w-full disabled:opacity-50">
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
+          <div className="text-right">
+            <Link to="/forgot-password" className="text-sm text-primary hover:underline">
+              Forgot password?
+            </Link>
+          </div>
           <p className="text-center text-sm text-muted-foreground">
             Don't have an account?{' '}
             <Link to="/signup" className="text-primary hover:underline">Sign up</Link>
