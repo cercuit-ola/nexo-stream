@@ -1,10 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useWallet } from '@/contexts/WalletContext';
-import { useStellar } from '@/contexts/StellarContext';
 import { supabase } from '@/lib/supabase';
 import { CalendarClock, Plus, Lock, CheckCircle, Copy, ExternalLink, AlertTriangle, RefreshCw } from 'lucide-react';
-import { ConnectWalletButton } from '@/components/ConnectWalletButton';
 
 interface Position {
   id: string;
@@ -30,8 +27,8 @@ interface Transaction {
 
 export default function Scheduler() {
   const { user, profile } = useAuth();
-  const { connected, address } = useWallet();
-  const { network, explorerBaseUrl } = useStellar();
+  const connected = true; // Wallet removed — scheduler works without wallet gating
+  const address = ''; // Placeholder
   const [positions, setPositions] = useState<Position[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [tab, setTab] = useState<'7day' | 'monthly'>('monthly');
@@ -151,16 +148,6 @@ export default function Scheduler() {
         </button>
       </div>
 
-      {/* Wallet connection prompt */}
-      {!connected && (
-        <div className="nexol-card p-5 border-l-4 border-l-amber flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <AlertTriangle className="h-5 w-5 text-amber flex-shrink-0" />
-            <p className="text-sm text-muted-foreground">Connect your Stellar wallet to create and sign schedule transactions.</p>
-          </div>
-          <ConnectWalletButton />
-        </div>
-      )}
 
       {/* Info card */}
       <div className="nexol-card p-4 border-l-4 border-l-primary">
@@ -253,7 +240,7 @@ export default function Scheduler() {
                           )}
                           {tx.stellar_tx_hash && (
                             <a
-                              href={`${explorerBaseUrl}/tx/${tx.stellar_tx_hash}`}
+                              href={`https://stellar.expert/explorer/public/tx/${tx.stellar_tx_hash}`}
                               target="_blank"
                               rel="noreferrer"
                               className="text-muted-foreground hover:text-primary"
@@ -274,7 +261,7 @@ export default function Scheduler() {
                 <button onClick={() => navigator.clipboard.writeText(pos.escrow_pubkey)}>
                   <Copy className="h-3 w-3" />
                 </button>
-                <a href={`${explorerBaseUrl}/account/${pos.escrow_pubkey}`} target="_blank" rel="noreferrer">
+                <a href={`https://stellar.expert/explorer/public/account/${pos.escrow_pubkey}`} target="_blank" rel="noreferrer">
                   <ExternalLink className="h-3 w-3" />
                 </a>
               </div>
@@ -360,13 +347,13 @@ export default function Scheduler() {
               </div>
             )}
 
-            <button onClick={handleCreate} disabled={loading || !amount || Number(amount) <= 0 || !connected}
+            <button onClick={handleCreate} disabled={loading || !amount || Number(amount) <= 0}
               className="nexol-btn-primary w-full disabled:opacity-50">
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <RefreshCw className="h-4 w-4 animate-spin" /> Creating on Stellar...
+                  <RefreshCw className="h-4 w-4 animate-spin" /> Creating Schedule...
                 </span>
-              ) : !connected ? 'Connect Wallet First' : tab === '7day' ? 'Create 7-Day Lock' : 'Create Monthly Split'}
+              ) : tab === '7day' ? 'Create 7-Day Lock' : 'Create Monthly Split'}
             </button>
           </div>
         </div>
@@ -395,11 +382,7 @@ export default function Scheduler() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Network:</span>
-                <span className="text-foreground capitalize">{network}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Wallet:</span>
-                <span className="font-mono text-xs text-foreground">{address?.slice(0, 8)}...{address?.slice(-4)}</span>
+                <span className="text-foreground">Stellar Mainnet</span>
               </div>
             </div>
             <div className="flex gap-3">
