@@ -101,6 +101,11 @@ export function DashboardLayout() {
           </div>
         </div>
 
+        {/* Mobile wallet connect (shown in sidebar on small screens) */}
+        <div className="border-t border-sidebar-border px-4 py-3 lg:hidden">
+          <ConnectWalletButton variant="compact" />
+        </div>
+
         {/* Bottom user */}
         <div className="border-t border-sidebar-border px-4 py-4">
           <div className="text-sm text-muted-foreground truncate mb-2">{user?.email}</div>
