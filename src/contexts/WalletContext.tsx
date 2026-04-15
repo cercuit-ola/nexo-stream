@@ -1,137 +1,159 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { useStellar } from './StellarContext';
 
 interface WalletContextType {
-  publicKey: string | null;
+  address: string | null;
   balance: string | null;
+  chainId: number | null;
   connected: boolean;
   connecting: boolean;
   error: string | null;
   connect: () => Promise<void>;
   disconnect: () => void;
   refreshBalance: () => Promise<void>;
-  signTransaction: (xdr: string) => Promise<string>;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
-function getFreighter(): any {
-  return (window as any).freighter ?? (window as any).freighterApi;
+function getEthereum(): any {
+  return (window as any).ethereum;
 }
 
 export function WalletProvider({ children }: { children: ReactNode }) {
-  const { network, horizonUrl, networkPassphrase } = useStellar();
-  const [publicKey, setPublicKey] = useState<string | null>(() => {
-    return localStorage.getItem('nexol_wallet_pubkey');
-  });
+  const [address, setAddress] = useState<string | null>(() => localStorage.getItem('nexol_wallet_address'));
   const [balance, setBalance] = useState<string | null>(null);
+  const [chainId, setChainId] = useState<number | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchBalance = useCallback(async (key: string) => {
+  const fetchBalance = useCallback(async (addr: string) => {
     try {
-      const res = await fetch(`${horizonUrl}/accounts/${key}`);
-      if (!res.ok) { setBalance('0.00'); return; }
-      const data = await res.json();
-      const native = data.balances?.find((b: any) => b.asset_type === 'native');
-      const usdc = data.balances?.find((b: any) => 
-        b.asset_code === 'USDC' && b.asset_type !== 'native'
-      );
-      // Prefer USDC, fallback to XLM
-      setBalance(usdc ? Number(usdc.balance).toFixed(2) : native ? Number(native.balance).toFixed(2) : '0.00');
+      const ethereum = getEthereum();
+      if (!ethereum) return;
+      const balHex = await ethereum.request({ method: 'eth_getBalance', params: [addr, 'latest'] });
+      const balWei = BigInt(balHex);
+      const balEth = Number(balWei) / 1e18;
+      setBalance(balEth.toFixed(4));
     } catch {
-      setBalance('0.00');
-    }
-  }, [horizonUrl]);
-
-  const refreshBalance = useCallback(async () => {
-    if (publicKey) await fetchBalance(publicKey);
-  }, [publicKey, fetchBalance]);
-
-  useEffect(() => {
-    if (publicKey) fetchBalance(publicKey);
-  }, [publicKey, network, fetchBalance]);
-
-  // Auto-reconnect on page load
-  useEffect(() => {
-    const saved = localStorage.getItem('nexol_wallet_pubkey');
-    if (saved) {
-      const freighter = getFreighter();
-      if (freighter) {
-        setPublicKey(saved);
-      }
+      setBalance('0.0000');
     }
   }, []);
+
+  const fetchChainId = useCallback(async () => {
+    try {
+      const ethereum = getEthereum();
+      if (!ethereum) return;
+      const id = await ethereum.request({ method: 'eth_chainId' });
+      setChainId(parseInt(id, 16));
+    } catch {}
+  }, []);
+
+  const refreshBalance = useCallback(async () => {
+    if (address) await fetchBalance(address);
+  }, [address, fetchBalance]);
+
+  // Listen for account/chain changes
+  useEffect(() => {
+    const ethereum = getEthereum();
+    if (!ethereum) return;
+
+    const handleAccountsChanged = (accounts: string[]) => {
+      if (accounts.length === 0) {
+        setAddress(null);
+        setBalance(null);
+        localStorage.removeItem('nexol_wallet_address');
+      } else {
+        const addr = accounts[0];
+        setAddress(addr);
+        localStorage.setItem('nexol_wallet_address', addr);
+        fetchBalance(addr);
+      }
+    };
+
+    const handleChainChanged = (id: string) => {
+      setChainId(parseInt(id, 16));
+      if (address) fetchBalance(address);
+    };
+
+    ethereum.on('accountsChanged', handleAccountsChanged);
+    ethereum.on('chainChanged', handleChainChanged);
+
+    return () => {
+      ethereum.removeListener('accountsChanged', handleAccountsChanged);
+      ethereum.removeListener('chainChanged', handleChainChanged);
+    };
+  }, [address, fetchBalance]);
+
+  // Auto-reconnect
+  useEffect(() => {
+    const saved = localStorage.getItem('nexol_wallet_address');
+    if (saved) {
+      const ethereum = getEthereum();
+      if (ethereum) {
+        ethereum.request({ method: 'eth_accounts' }).then((accounts: string[]) => {
+          if (accounts.includes(saved)) {
+            setAddress(saved);
+            fetchBalance(saved);
+            fetchChainId();
+          } else {
+            localStorage.removeItem('nexol_wallet_address');
+            setAddress(null);
+          }
+        }).catch(() => {});
+      }
+    }
+  }, [fetchBalance, fetchChainId]);
 
   const connect = async () => {
     setConnecting(true);
     setError(null);
     try {
-      const freighter = getFreighter();
-      if (!freighter) {
-        setError('Freighter wallet not found. Please install Freighter browser extension.');
+      const ethereum = getEthereum();
+      if (!ethereum) {
+        setError('MetaMask not found. Please install the MetaMask browser extension.');
         setConnecting(false);
         return;
       }
 
-      // Check if user has granted access
-      const isAllowed = await freighter.isAllowed?.();
-      if (!isAllowed) {
-        await freighter.setAllowed?.();
-      }
-
-      const key = await freighter.getPublicKey();
-      if (!key) {
-        setError('Failed to get public key from Freighter');
+      const accounts: string[] = await ethereum.request({ method: 'eth_requestAccounts' });
+      if (!accounts || accounts.length === 0) {
+        setError('No accounts found. Please unlock MetaMask.');
         setConnecting(false);
         return;
       }
 
-      // Check network
-      const walletNetwork = await freighter.getNetwork?.();
-      const expectedNetwork = network === 'mainnet' ? 'PUBLIC' : 'TESTNET';
-      if (walletNetwork && walletNetwork !== expectedNetwork) {
-        setError(`Network mismatch: Freighter is on ${walletNetwork}, but NexolPay expects ${expectedNetwork}. Please switch in Freighter settings.`);
-        setConnecting(false);
-        return;
-      }
-
-      setPublicKey(key);
-      localStorage.setItem('nexol_wallet_pubkey', key);
-      await fetchBalance(key);
+      const addr = accounts[0];
+      setAddress(addr);
+      localStorage.setItem('nexol_wallet_address', addr);
+      await fetchBalance(addr);
+      await fetchChainId();
     } catch (err: any) {
-      setError(err?.message ?? 'Failed to connect wallet');
+      if (err.code === 4001) {
+        setError('Connection rejected by user.');
+      } else {
+        setError(err?.message ?? 'Failed to connect wallet');
+      }
     }
     setConnecting(false);
   };
 
   const disconnect = () => {
-    setPublicKey(null);
+    setAddress(null);
     setBalance(null);
-    localStorage.removeItem('nexol_wallet_pubkey');
-  };
-
-  const signTransaction = async (xdr: string): Promise<string> => {
-    const freighter = getFreighter();
-    if (!freighter) throw new Error('Freighter not available');
-    const signed = await freighter.signTransaction(xdr, {
-      networkPassphrase,
-      network: network === 'mainnet' ? 'PUBLIC' : 'TESTNET',
-    });
-    return signed;
+    setChainId(null);
+    localStorage.removeItem('nexol_wallet_address');
   };
 
   return (
     <WalletContext.Provider value={{
-      publicKey,
+      address,
       balance,
-      connected: !!publicKey,
+      chainId,
+      connected: !!address,
       connecting,
       error,
       connect,
       disconnect,
       refreshBalance,
-      signTransaction,
     }}>
       {children}
     </WalletContext.Provider>
@@ -142,4 +164,20 @@ export function useWallet() {
   const ctx = useContext(WalletContext);
   if (!ctx) throw new Error('useWallet must be used within WalletProvider');
   return ctx;
+}
+
+// Helper to get chain name
+export function getChainName(chainId: number | null): string {
+  switch (chainId) {
+    case 1: return 'Ethereum';
+    case 137: return 'Polygon';
+    case 56: return 'BNB Chain';
+    case 42161: return 'Arbitrum';
+    case 10: return 'Optimism';
+    case 8453: return 'Base';
+    case 43114: return 'Avalanche';
+    case 5: return 'Goerli';
+    case 11155111: return 'Sepolia';
+    default: return chainId ? `Chain ${chainId}` : 'Unknown';
+  }
 }

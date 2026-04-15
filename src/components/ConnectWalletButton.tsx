@@ -1,23 +1,25 @@
-import { useWallet } from '@/contexts/WalletContext';
+import { useWallet, getChainName } from '@/contexts/WalletContext';
 import { Wallet, LogOut, Copy, CheckCircle } from 'lucide-react';
 import { useState } from 'react';
 
 export function ConnectWalletButton({ variant = 'default' }: { variant?: 'default' | 'compact' }) {
-  const { publicKey, balance, connected, connecting, error, connect, disconnect } = useWallet();
+  const { address, balance, chainId, connected, connecting, error, connect, disconnect } = useWallet();
   const [copied, setCopied] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
 
   const copyAddress = () => {
-    if (publicKey) {
-      navigator.clipboard.writeText(publicKey);
+    if (address) {
+      navigator.clipboard.writeText(address);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
   };
 
-  const truncatedKey = publicKey 
-    ? `${publicKey.slice(0, 4)}...${publicKey.slice(-4)}` 
+  const truncatedAddr = address
+    ? `${address.slice(0, 6)}...${address.slice(-4)}`
     : '';
+
+  const chainName = getChainName(chainId);
 
   if (!connected) {
     return (
@@ -43,20 +45,23 @@ export function ConnectWalletButton({ variant = 'default' }: { variant?: 'defaul
           className="flex items-center gap-2 bg-secondary rounded-full px-3 py-1.5 text-sm hover:bg-secondary/80 transition-colors"
         >
           <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-          <span className="font-mono text-foreground text-xs">{truncatedKey}</span>
-          {balance && <span className="font-mono text-primary text-xs font-bold">{balance}</span>}
+          <span className="font-mono text-foreground text-xs">{truncatedAddr}</span>
         </button>
 
         {showDropdown && (
           <>
             <div className="fixed inset-0 z-40" onClick={() => setShowDropdown(false)} />
-            <div className="absolute right-0 top-full mt-2 z-50 nexol-card p-3 min-w-[220px] space-y-2">
+            <div className="absolute right-0 top-full mt-2 z-50 nexol-card p-3 min-w-[240px] space-y-2">
               <div className="text-xs text-muted-foreground">Connected Wallet</div>
-              <div className="font-mono text-xs text-foreground break-all">{publicKey}</div>
+              <div className="font-mono text-xs text-foreground break-all">{address}</div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground">Network:</span>
+                <span className="text-xs font-medium text-foreground">{chainName}</span>
+              </div>
               {balance && (
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Balance:</span>
-                  <span className="font-mono font-bold text-primary">{balance}</span>
+                  <span className="font-mono font-bold text-primary">{balance} ETH</span>
                 </div>
               )}
               <div className="flex gap-2 pt-1">
@@ -88,13 +93,14 @@ export function ConnectWalletButton({ variant = 'default' }: { variant?: 'defaul
         </button>
       </div>
       <div className="flex items-center gap-2">
-        <span className="font-mono text-sm text-muted-foreground">{truncatedKey}</span>
+        <span className="font-mono text-sm text-muted-foreground">{truncatedAddr}</span>
         <button onClick={copyAddress} className="text-muted-foreground hover:text-foreground">
           {copied ? <CheckCircle className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5" />}
         </button>
       </div>
+      <div className="text-xs text-muted-foreground">{chainName}</div>
       {balance && (
-        <div className="font-mono text-2xl font-bold text-foreground">{balance} <span className="text-sm text-muted-foreground">USDC</span></div>
+        <div className="font-mono text-2xl font-bold text-foreground">{balance} <span className="text-sm text-muted-foreground">ETH</span></div>
       )}
     </div>
   );
