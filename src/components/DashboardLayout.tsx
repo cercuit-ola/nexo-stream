@@ -1,5 +1,8 @@
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useWallet } from '@/contexts/WalletContext';
+import { useStellar } from '@/contexts/StellarContext';
+import { ConnectWalletButton } from '@/components/ConnectWalletButton';
 import {
   LayoutDashboard, CalendarClock, Lock, CreditCard,
   Gift, FileText, Settings, LogOut, Bell, Menu, X, ArrowLeft
@@ -19,6 +22,7 @@ const navItems = [
 
 export function DashboardLayout() {
   const { user, signOut } = useAuth();
+  const { network, setNetwork } = useStellar();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -74,6 +78,34 @@ export function DashboardLayout() {
           ))}
         </nav>
 
+        {/* Network toggle */}
+        <div className="px-4 py-3 border-t border-sidebar-border">
+          <label className="text-xs text-muted-foreground mb-1.5 block">Stellar Network</label>
+          <div className="flex gap-1">
+            <button
+              onClick={() => setNetwork('mainnet')}
+              className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                network === 'mainnet' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'
+              }`}
+            >
+              Mainnet
+            </button>
+            <button
+              onClick={() => setNetwork('testnet')}
+              className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                network === 'testnet' ? 'bg-amber text-amber-foreground' : 'bg-secondary text-muted-foreground'
+              }`}
+            >
+              Testnet
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile wallet connect */}
+        <div className="border-t border-sidebar-border px-4 py-3 lg:hidden">
+          <ConnectWalletButton variant="compact" />
+        </div>
+
         {/* Bottom user */}
         <div className="border-t border-sidebar-border px-4 py-4">
           <div className="text-sm text-muted-foreground truncate mb-2">{user?.email}</div>
@@ -102,7 +134,17 @@ export function DashboardLayout() {
               </button>
             )}
           </div>
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
+            <div className="hidden sm:block">
+              <ConnectWalletButton variant="compact" />
+            </div>
+            <span className={`hidden sm:inline-flex items-center rounded-full px-2 sm:px-3 py-1 text-xs font-medium whitespace-nowrap ${
+              network === 'mainnet'
+                ? 'bg-primary/20 text-primary'
+                : 'bg-amber/20 text-amber'
+            }`}>
+              {network === 'mainnet' ? '● Mainnet' : '● Testnet'}
+            </span>
             <button className="relative flex-shrink-0">
               <Bell className="h-5 w-5 text-muted-foreground" />
             </button>
