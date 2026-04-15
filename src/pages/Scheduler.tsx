@@ -97,20 +97,7 @@ export default function Scheduler() {
 
       if (fnError) throw new Error(fnError.message);
 
-      // If the edge function returns a transaction XDR to sign
-      if (data?.tx_xdr) {
-        try {
-          const signedXdr = await undefined(data.tx_xdr);
-          // Submit signed transaction back
-          await supabase.functions.invoke('submit-stellar-tx', {
-            body: { signed_xdr: signedXdr, position_id: data.position_id, network },
-          });
-        } catch (signErr: any) {
-          setError(`Transaction signing failed: ${signErr.message}`);
-          setLoading(false);
-          return;
-        }
-      }
+      // Transaction created server-side, no client signing needed for EVM
 
       setShowModal(false);
       setAmount('');
