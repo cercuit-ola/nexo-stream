@@ -71,7 +71,7 @@ export default function Dashboard() {
             <AlertTriangle className="h-5 w-5 text-amber flex-shrink-0" />
             <div>
               <p className="text-sm font-medium text-foreground">Wallet Not Connected</p>
-              <p className="text-xs text-muted-foreground">Connect your Stellar wallet to deposit, schedule, and sign transactions.</p>
+              <p className="text-xs text-muted-foreground">Connect your wallet to deposit, schedule, and sign transactions.</p>
             </div>
           </div>
           <ConnectWalletButton />
