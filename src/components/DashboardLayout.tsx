@@ -1,8 +1,11 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useWallet } from '@/contexts/WalletContext';
+import { useStellar } from '@/contexts/StellarContext';
+import { ConnectWalletButton } from '@/components/ConnectWalletButton';
 import {
   LayoutDashboard, CalendarClock, Lock, Wallet,
-  Gift, FileText, Settings, LogOut, Bell, Menu, X
+  Gift, FileText, Settings, LogOut, Bell, Menu, X, ArrowLeft
 } from 'lucide-react';
 import { useState } from 'react';
 import nexolLogo from '@/assets/nexolpay-logo.png';
@@ -19,13 +22,17 @@ const navItems = [
 
 export function DashboardLayout() {
   const { user, profile, signOut } = useAuth();
+  const { network, setNetwork } = useStellar();
   const navigate = useNavigate();
+  const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleLogout = async () => {
     await signOut();
     navigate('/login');
   };
+
+  const isSubPage = location.pathname !== '/dashboard';
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -71,6 +78,29 @@ export function DashboardLayout() {
           ))}
         </nav>
 
+        {/* Network toggle */}
+        <div className="px-4 py-3 border-t border-sidebar-border">
+          <label className="text-xs text-muted-foreground mb-1.5 block">Stellar Network</label>
+          <div className="flex gap-1">
+            <button
+              onClick={() => setNetwork('mainnet')}
+              className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                network === 'mainnet' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'
+              }`}
+            >
+              Mainnet
+            </button>
+            <button
+              onClick={() => setNetwork('testnet')}
+              className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                network === 'testnet' ? 'bg-amber text-amber-foreground' : 'bg-secondary text-muted-foreground'
+              }`}
+            >
+              Testnet
+            </button>
+          </div>
+        </div>
+
         {/* Bottom user */}
         <div className="border-t border-sidebar-border px-4 py-4">
           <div className="text-sm text-muted-foreground truncate mb-2">{user?.email}</div>
@@ -83,26 +113,30 @@ export function DashboardLayout() {
 
       {/* Main */}
       <div className="flex-1 lg:ml-[260px]">
-        {/* KYC Banner */}
-        {profile && profile.kyc_status !== 'verified' && (
-          <div className="kyc-banner">
-            ⚠️ Complete KYC to unlock all features
-          </div>
-        )}
-
         {/* Top bar */}
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/80 backdrop-blur-md px-4 lg:px-6">
           <div className="flex items-center gap-3">
             <button className="lg:hidden" onClick={() => setMobileOpen(true)}>
               <Menu className="h-5 w-5 text-foreground" />
             </button>
+            {isSubPage && (
+              <button
+                onClick={() => navigate(-1)}
+                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span className="hidden sm:inline">Back</span>
+              </button>
+            )}
           </div>
-          <div className="flex items-center gap-4">
-            <span className="font-mono text-sm text-primary font-bold">
-              {profile?.usdc_balance?.toFixed(2) ?? '0.00'} USDC
-            </span>
-            <span className="inline-flex items-center rounded-full bg-amber/20 px-3 py-1 text-xs font-medium text-amber">
-              Stellar Testnet
+          <div className="flex items-center gap-3">
+            <ConnectWalletButton variant="compact" />
+            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${
+              network === 'mainnet'
+                ? 'bg-primary/20 text-primary'
+                : 'bg-amber/20 text-amber'
+            }`}>
+              {network === 'mainnet' ? '● Mainnet' : '● Testnet'}
             </span>
             <button className="relative">
               <Bell className="h-5 w-5 text-muted-foreground" />

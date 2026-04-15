@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useWallet } from '@/contexts/WalletContext';
+import { useStellar } from '@/contexts/StellarContext';
 import { supabase } from '@/lib/supabase';
-import { Wallet, Copy, ArrowDownUp, Building2 } from 'lucide-react';
+import { Wallet, Copy, ArrowDownUp, Building2, ExternalLink, AlertTriangle } from 'lucide-react';
+import { ConnectWalletButton } from '@/components/ConnectWalletButton';
 
 const BANKS = [
   { name: 'GTBank', code: '058' }, { name: 'Access Bank', code: '044' },
@@ -33,7 +36,9 @@ interface Withdrawal {
 
 export default function WalletPage() {
   const { user, profile, refreshProfile } = useAuth();
-  const [tab, setTab] = useState<'convert' | 'receive'>('convert');
+  const { connected, publicKey, balance: walletBalance, refreshBalance } = useWallet();
+  const { network, explorerBaseUrl } = useStellar();
+  const [tab, setTab] = useState<'wallet' | 'convert' | 'receive'>('wallet');
   const [rate, setRate] = useState(1550);
   const [amount, setAmount] = useState('');
   const [banks, setBanks] = useState<BankAccount[]>([]);
@@ -141,11 +146,27 @@ export default function WalletPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-foreground">Wallet & Off-Ramp</h1>
 
-      {/* Balance Card */}
+      {/* Wallet Connection Card */}
+      {!connected ? (
+        <div className="nexol-card p-6 text-center space-y-4">
+          <Wallet className="h-10 w-10 text-primary mx-auto" />
+          <h3 className="text-lg font-semibold text-foreground">Connect Your Stellar Wallet</h3>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+            Connect your Freighter wallet to view your on-chain balance, deposit funds, and manage transactions.
+          </p>
+          <div className="flex justify-center">
+            <ConnectWalletButton />
+          </div>
+        </div>
+      ) : (
+        <ConnectWalletButton />
+      )}
+
+      {/* NexolPay Balance */}
       <div className="nexol-card p-6">
         <div className="flex items-center gap-3 mb-2">
           <Wallet className="h-6 w-6 text-primary" />
-          <span className="text-muted-foreground text-sm">USDC Balance</span>
+          <span className="text-muted-foreground text-sm">NexolPay Balance</span>
         </div>
         <div className="font-mono text-4xl font-bold text-foreground mb-1">
           ${profile?.usdc_balance?.toFixed(2) ?? '0.00'}
@@ -153,10 +174,22 @@ export default function WalletPage() {
         <div className="text-sm text-muted-foreground font-mono">
           ≈ ₦{((profile?.usdc_balance ?? 0) * rate).toLocaleString()} NGN
         </div>
+        {connected && publicKey && (
+          <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="font-mono">{publicKey.slice(0, 8)}...{publicKey.slice(-4)}</span>
+            <a href={`${explorerBaseUrl}/account/${publicKey}`} target="_blank" rel="noreferrer" className="hover:text-primary">
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          </div>
+        )}
       </div>
 
       {/* Tabs */}
       <div className="flex gap-2">
+        <button onClick={() => setTab('wallet')}
+          className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${tab === 'wallet' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'}`}>
+          Deposit
+        </button>
         <button onClick={() => setTab('convert')}
           className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${tab === 'convert' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'}`}>
           Convert & Withdraw
@@ -167,9 +200,43 @@ export default function WalletPage() {
         </button>
       </div>
 
+      {tab === 'wallet' && (
+        <div className="space-y-4">
+          {connected ? (
+            <div className="nexol-card p-6 space-y-4">
+              <h3 className="text-lg font-semibold text-foreground">Deposit from Wallet</h3>
+              <p className="text-sm text-muted-foreground">
+                Deposit USDC from your connected Stellar wallet into NexolPay to use with the scheduler, vault, or off-ramp.
+              </p>
+              <div>
+                <label className="text-sm text-muted-foreground mb-2 block">Amount (USDC)</label>
+                <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)}
+                  className="nexol-input font-mono text-lg" placeholder="0.00" />
+                {walletBalance && (
+                  <p className="text-xs text-muted-foreground mt-1">Wallet Balance: {walletBalance} USDC</p>
+                )}
+              </div>
+              <button
+                disabled={!amount || Number(amount) <= 0}
+                className="nexol-btn-primary w-full disabled:opacity-50"
+              >
+                Deposit to NexolPay
+              </button>
+              <p className="text-xs text-muted-foreground text-center">
+                Your wallet will prompt you to sign the transaction.
+              </p>
+            </div>
+          ) : (
+            <div className="nexol-card p-6 text-center">
+              <AlertTriangle className="h-8 w-8 text-amber mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground">Connect your wallet to deposit funds.</p>
+            </div>
+          )}
+        </div>
+      )}
+
       {tab === 'convert' && (
         <div className="space-y-4">
-          {/* Conversion */}
           <div className="nexol-card p-6 space-y-4">
             <div>
               <label className="text-sm text-muted-foreground mb-2 block">You Pay</label>
@@ -194,7 +261,6 @@ export default function WalletPage() {
             </div>
           </div>
 
-          {/* Bank */}
           {defaultBank ? (
             <div className="nexol-card p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -223,13 +289,17 @@ export default function WalletPage() {
         <div className="nexol-card p-6 text-center space-y-4">
           <p className="text-sm text-muted-foreground">Send USDC to this address to top up your NexolPay balance.</p>
           <div className="bg-secondary rounded-xl p-4 font-mono text-xs text-foreground break-all">
-            {user?.id ?? 'Connect wallet to view address'}
+            {connected && publicKey ? publicKey : 'Connect wallet to view address'}
           </div>
-          <button onClick={() => navigator.clipboard.writeText(user?.id ?? '')}
-            className="nexol-btn-outline flex items-center gap-2 mx-auto">
-            <Copy className="h-4 w-4" /> Copy Address
-          </button>
-          <p className="text-xs text-muted-foreground">Supports USDC on Base and Stellar. Credits within 5-15 minutes.</p>
+          {connected && publicKey && (
+            <button onClick={() => navigator.clipboard.writeText(publicKey)}
+              className="nexol-btn-outline flex items-center gap-2 mx-auto">
+              <Copy className="h-4 w-4" /> Copy Address
+            </button>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Supports USDC on Stellar {network === 'mainnet' ? 'Mainnet' : 'Testnet'}. Credits within 5-15 minutes.
+          </p>
         </div>
       )}
 

@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useWallet } from '@/contexts/WalletContext';
+import { useStellar } from '@/contexts/StellarContext';
 import { supabase } from '@/lib/supabase';
-import { CalendarClock, Plus, Lock, CheckCircle, Copy, ExternalLink } from 'lucide-react';
+import { CalendarClock, Plus, Lock, CheckCircle, Copy, ExternalLink, AlertTriangle, RefreshCw } from 'lucide-react';
+import { ConnectWalletButton } from '@/components/ConnectWalletButton';
 
 interface Position {
   id: string;
@@ -27,11 +30,15 @@ interface Transaction {
 
 export default function Scheduler() {
   const { user, profile } = useAuth();
+  const { connected, publicKey, signTransaction } = useWallet();
+  const { network, explorerBaseUrl } = useStellar();
   const [positions, setPositions] = useState<Position[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [tab, setTab] = useState<'7day' | 'monthly'>('monthly');
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -61,25 +68,58 @@ export default function Scheduler() {
 
   const handleCreate = async () => {
     if (!amount || Number(amount) <= 0) return;
+    if (!connected || !publicKey) {
+      setError('Please connect your wallet first');
+      return;
+    }
+    
+    setShowConfirm(true);
+  };
+
+  const confirmAndCreate = async () => {
+    setShowConfirm(false);
     setLoading(true);
+    setError(null);
 
-    const { error } = await supabase.functions.invoke('create-stellar-schedule', {
-      body: {
-        user_id: user!.id,
-        type: tab,
-        total_amount: Number(amount),
-        weekly_amount: weeklyAmount,
-        num_weeks: numWeeks,
-        start_date: new Date().toISOString(),
-      },
-    });
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke('create-stellar-schedule', {
+        body: {
+          user_id: user!.id,
+          wallet_pubkey: publicKey,
+          type: tab,
+          total_amount: Number(amount),
+          weekly_amount: weeklyAmount,
+          num_weeks: numWeeks,
+          start_date: new Date().toISOString(),
+          network,
+        },
+      });
 
-    setLoading(false);
-    if (!error) {
+      if (fnError) throw new Error(fnError.message);
+
+      // If the edge function returns a transaction XDR to sign
+      if (data?.tx_xdr) {
+        try {
+          const signedXdr = await signTransaction(data.tx_xdr);
+          // Submit signed transaction back
+          await supabase.functions.invoke('submit-stellar-tx', {
+            body: { signed_xdr: signedXdr, position_id: data.position_id, network },
+          });
+        } catch (signErr: any) {
+          setError(`Transaction signing failed: ${signErr.message}`);
+          setLoading(false);
+          return;
+        }
+      }
+
       setShowModal(false);
       setAmount('');
       fetchPositions();
+    } catch (err: any) {
+      setError(err.message ?? 'Failed to create schedule');
     }
+
+    setLoading(false);
   };
 
   const getWeekDates = () => {
@@ -93,8 +133,24 @@ export default function Scheduler() {
     return dates;
   };
 
-  const activeCount = positions.filter(p => p.status === 'active').length;
-  const totalLocked = positions.filter(p => p.status === 'active').reduce((s, p) => s + Number(p.total_amount), 0);
+  const activePositions = positions.filter(p => p.status === 'active');
+  const activeCount = activePositions.length;
+  const totalLocked = activePositions.reduce((s, p) => s + Number(p.total_amount), 0);
+  
+  // Calculate released this month
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const releasedThisMonth = positions.reduce((sum, pos) => {
+    return sum + (pos.scheduler_transactions ?? [])
+      .filter(tx => tx.submitted && new Date(tx.unlock_timestamp * 1000) >= monthStart)
+      .reduce((s, tx) => s + Number(tx.amount), 0);
+  }, 0);
+
+  // Next release date
+  const nextRelease = positions
+    .flatMap(p => p.scheduler_transactions ?? [])
+    .filter(tx => !tx.submitted)
+    .sort((a, b) => a.unlock_timestamp - b.unlock_timestamp)[0];
 
   return (
     <div className="space-y-6">
@@ -107,6 +163,17 @@ export default function Scheduler() {
           <Plus className="h-4 w-4" /> New Schedule
         </button>
       </div>
+
+      {/* Wallet connection prompt */}
+      {!connected && (
+        <div className="nexol-card p-5 border-l-4 border-l-amber flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 text-amber flex-shrink-0" />
+            <p className="text-sm text-muted-foreground">Connect your Stellar wallet to create and sign schedule transactions.</p>
+          </div>
+          <ConnectWalletButton />
+        </div>
+      )}
 
       {/* Info card */}
       <div className="nexol-card p-4 border-l-4 border-l-primary">
@@ -128,11 +195,15 @@ export default function Scheduler() {
         </div>
         <div className="nexol-stat-card">
           <span className="text-muted-foreground text-sm">Released This Month</span>
-          <div className="font-mono text-2xl font-bold text-primary mt-1">$0.00</div>
+          <div className="font-mono text-2xl font-bold text-primary mt-1">${releasedThisMonth.toFixed(2)}</div>
         </div>
         <div className="nexol-stat-card">
           <span className="text-muted-foreground text-sm">Next Release</span>
-          <div className="text-lg font-bold text-foreground mt-1">—</div>
+          <div className="text-lg font-bold text-foreground mt-1">
+            {nextRelease
+              ? new Date(nextRelease.unlock_timestamp * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+              : '—'}
+          </div>
         </div>
       </div>
 
@@ -154,8 +225,8 @@ export default function Scheduler() {
                 </span>
                 <span className="text-xs text-muted-foreground font-mono">{pos.reference_number}</span>
               </div>
-              <span className={pos.status === 'active' ? 'nexol-badge-pending' : 'nexol-badge-success'}>
-                {pos.status === 'active' ? '🔒 Active' : '✅ Completed'}
+              <span className={pos.status === 'active' ? 'nexol-badge-pending' : pos.status === 'failed' ? 'nexol-badge-error' : 'nexol-badge-success'}>
+                {pos.status === 'active' ? '🔒 Active' : pos.status === 'failed' ? '❌ Failed' : '✅ Completed'}
               </span>
             </div>
 
@@ -187,11 +258,23 @@ export default function Scheduler() {
                           <span className="text-sm text-foreground">{unlockDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                           <span className="font-mono text-sm text-foreground">${Number(tx.amount).toFixed(2)}</span>
                         </div>
-                        {isReleased ? (
-                          <span className="nexol-badge-success"><CheckCircle className="h-3 w-3" /> Released</span>
-                        ) : (
-                          <span className="nexol-badge-pending"><Lock className="h-3 w-3" /> {daysLeft}d</span>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {isReleased ? (
+                            <span className="nexol-badge-success"><CheckCircle className="h-3 w-3" /> Released</span>
+                          ) : (
+                            <span className="nexol-badge-pending"><Lock className="h-3 w-3" /> {daysLeft}d</span>
+                          )}
+                          {tx.stellar_tx_hash && (
+                            <a
+                              href={`${explorerBaseUrl}/tx/${tx.stellar_tx_hash}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-muted-foreground hover:text-primary"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
@@ -204,7 +287,7 @@ export default function Scheduler() {
                 <button onClick={() => navigator.clipboard.writeText(pos.escrow_pubkey)}>
                   <Copy className="h-3 w-3" />
                 </button>
-                <a href={`https://stellar.expert/explorer/testnet/account/${pos.escrow_pubkey}`} target="_blank" rel="noreferrer">
+                <a href={`${explorerBaseUrl}/account/${pos.escrow_pubkey}`} target="_blank" rel="noreferrer">
                   <ExternalLink className="h-3 w-3" />
                 </a>
               </div>
@@ -213,14 +296,22 @@ export default function Scheduler() {
         ))}
       </div>
 
-      {/* Modal */}
+      {/* Create Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm px-4">
           <div className="nexol-card w-full max-w-lg p-6 space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold text-foreground">Create New Schedule</h2>
-              <button onClick={() => setShowModal(false)} className="text-muted-foreground hover:text-foreground">✕</button>
+              <button onClick={() => { setShowModal(false); setError(null); }} className="text-muted-foreground hover:text-foreground">✕</button>
             </div>
+
+            {error && (
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10 text-destructive text-sm">
+                <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                {error}
+                <button onClick={() => setError(null)} className="ml-auto text-xs hover:underline">Dismiss</button>
+              </div>
+            )}
 
             {/* Tabs */}
             <div className="flex gap-2">
@@ -282,10 +373,52 @@ export default function Scheduler() {
               </div>
             )}
 
-            <button onClick={handleCreate} disabled={loading || !amount || Number(amount) <= 0}
+            <button onClick={handleCreate} disabled={loading || !amount || Number(amount) <= 0 || !connected}
               className="nexol-btn-primary w-full disabled:opacity-50">
-              {loading ? 'Creating on Stellar...' : tab === '7day' ? 'Create 7-Day Lock' : 'Create Monthly Split'}
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <RefreshCw className="h-4 w-4 animate-spin" /> Creating on Stellar...
+                </span>
+              ) : !connected ? 'Connect Wallet First' : tab === '7day' ? 'Create 7-Day Lock' : 'Create Monthly Split'}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {showConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-background/80 backdrop-blur-sm px-4">
+          <div className="nexol-card w-full max-w-md p-6 space-y-5">
+            <div className="text-center">
+              <Lock className="h-12 w-12 text-amber mx-auto mb-3" />
+              <h2 className="text-lg font-bold text-foreground">Confirm Fund Lock</h2>
+              <p className="text-sm text-muted-foreground mt-2">
+                You are about to lock <strong className="text-foreground">${Number(amount).toFixed(2)} USDC</strong> in a Stellar escrow.
+                These funds cannot be accessed until the schedule completes.
+              </p>
+            </div>
+            <div className="nexol-card p-4 bg-secondary/30 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Type:</span>
+                <span className="text-foreground">{tab === '7day' ? '7-Day Lock' : 'Monthly Split (4 weeks)'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Amount:</span>
+                <span className="font-mono text-foreground">${Number(amount).toFixed(2)} USDC</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Network:</span>
+                <span className="text-foreground capitalize">{network}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Wallet:</span>
+                <span className="font-mono text-xs text-foreground">{publicKey?.slice(0, 8)}...{publicKey?.slice(-4)}</span>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setShowConfirm(false)} className="nexol-btn-outline flex-1">Cancel</button>
+              <button onClick={confirmAndCreate} className="nexol-btn-primary flex-1">Confirm & Lock</button>
+            </div>
           </div>
         </div>
       )}

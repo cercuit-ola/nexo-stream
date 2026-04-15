@@ -4,6 +4,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { StellarProvider } from "@/contexts/StellarContext";
+import { WalletProvider } from "@/contexts/WalletContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import Login from "@/pages/Login";
@@ -28,23 +30,27 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-              <Route index element={<Dashboard />} />
-              <Route path="scheduler" element={<Scheduler />} />
-              <Route path="vault" element={<Vault />} />
-              <Route path="wallet" element={<WalletPage />} />
-              <Route path="giftcard" element={<GiftCard />} />
-              <Route path="transactions" element={<Transactions />} />
-              <Route path="settings" element={<SettingsPage />} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <StellarProvider>
+            <WalletProvider>
+              <Routes>
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+                  <Route index element={<Dashboard />} />
+                  <Route path="scheduler" element={<Scheduler />} />
+                  <Route path="vault" element={<Vault />} />
+                  <Route path="wallet" element={<WalletPage />} />
+                  <Route path="giftcard" element={<GiftCard />} />
+                  <Route path="transactions" element={<Transactions />} />
+                  <Route path="settings" element={<SettingsPage />} />
+                </Route>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </WalletProvider>
+          </StellarProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
