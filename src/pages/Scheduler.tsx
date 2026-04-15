@@ -68,7 +68,7 @@ export default function Scheduler() {
 
   const handleCreate = async () => {
     if (!amount || Number(amount) <= 0) return;
-    if (!connected || !publicKey) {
+    if (!connected || !address) {
       setError('Please connect your wallet first');
       return;
     }
@@ -85,7 +85,7 @@ export default function Scheduler() {
       const { data, error: fnError } = await supabase.functions.invoke('create-stellar-schedule', {
         body: {
           user_id: user!.id,
-          wallet_pubkey: publicKey,
+          wallet_address: address,
           type: tab,
           total_amount: Number(amount),
           weekly_amount: weeklyAmount,
@@ -100,7 +100,7 @@ export default function Scheduler() {
       // If the edge function returns a transaction XDR to sign
       if (data?.tx_xdr) {
         try {
-          const signedXdr = await signTransaction(data.tx_xdr);
+          const signedXdr = await undefined(data.tx_xdr);
           // Submit signed transaction back
           await supabase.functions.invoke('submit-stellar-tx', {
             body: { signed_xdr: signedXdr, position_id: data.position_id, network },
@@ -412,7 +412,7 @@ export default function Scheduler() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Wallet:</span>
-                <span className="font-mono text-xs text-foreground">{publicKey?.slice(0, 8)}...{publicKey?.slice(-4)}</span>
+                <span className="font-mono text-xs text-foreground">{address?.slice(0, 8)}...{address?.slice(-4)}</span>
               </div>
             </div>
             <div className="flex gap-3">

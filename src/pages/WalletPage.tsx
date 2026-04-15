@@ -36,7 +36,7 @@ interface Withdrawal {
 
 export default function WalletPage() {
   const { user, profile, refreshProfile } = useAuth();
-  const { connected, publicKey, balance: walletBalance, refreshBalance } = useWallet();
+  const { connected, address, balance: walletBalance, refreshBalance } = useWallet();
   const { network, explorerBaseUrl } = useStellar();
   const [tab, setTab] = useState<'wallet' | 'convert' | 'receive'>('wallet');
   const [rate, setRate] = useState(1550);
@@ -174,10 +174,10 @@ export default function WalletPage() {
         <div className="text-sm text-muted-foreground font-mono">
           ≈ ₦{((profile?.usdc_balance ?? 0) * rate).toLocaleString()} NGN
         </div>
-        {connected && publicKey && (
+        {connected && address && (
           <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="font-mono">{publicKey.slice(0, 8)}...{publicKey.slice(-4)}</span>
-            <a href={`${explorerBaseUrl}/account/${publicKey}`} target="_blank" rel="noreferrer" className="hover:text-primary">
+            <span className="font-mono">{address.slice(0, 8)}...{address.slice(-4)}</span>
+            <a href={`${explorerBaseUrl}/account/${address}`} target="_blank" rel="noreferrer" className="hover:text-primary">
               <ExternalLink className="h-3 w-3" />
             </a>
           </div>
@@ -289,10 +289,10 @@ export default function WalletPage() {
         <div className="nexol-card p-6 text-center space-y-4">
           <p className="text-sm text-muted-foreground">Send USDC to this address to top up your NexolPay balance.</p>
           <div className="bg-secondary rounded-xl p-4 font-mono text-xs text-foreground break-all">
-            {connected && publicKey ? publicKey : 'Connect wallet to view address'}
+            {connected && address ? address : 'Connect wallet to view address'}
           </div>
-          {connected && publicKey && (
-            <button onClick={() => navigator.clipboard.writeText(publicKey)}
+          {connected && address && (
+            <button onClick={() => navigator.clipboard.writeText(address)}
               className="nexol-btn-outline flex items-center gap-2 mx-auto">
               <Copy className="h-4 w-4" /> Copy Address
             </button>
