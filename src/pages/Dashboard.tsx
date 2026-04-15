@@ -1,11 +1,16 @@
 import { useAuth } from '@/contexts/AuthContext';
+import { useWallet } from '@/contexts/WalletContext';
+import { useStellar } from '@/contexts/StellarContext';
 import { useNavigate } from 'react-router-dom';
-import { CalendarClock, Lock, TrendingUp, Gift, CreditCard, ArrowRight, DollarSign } from 'lucide-react';
+import { CalendarClock, Lock, TrendingUp, Gift, CreditCard, ArrowRight, AlertTriangle, DollarSign } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { ConnectWalletButton } from '@/components/ConnectWalletButton';
 
 export default function Dashboard() {
   const { profile, user } = useAuth();
+  const { connected, balance: walletBalance } = useWallet();
+  const { network } = useStellar();
   const navigate = useNavigate();
   const [stats, setStats] = useState({ scheduled: 0, vaulted: 0, earned: 0, redeemed: 0, nextPayout: null as Date | null });
 
@@ -60,6 +65,34 @@ export default function Dashboard() {
           <p className="text-muted-foreground text-sm">Here's your NexolPay overview</p>
         </div>
       </div>
+
+      {/* Wallet connection prompt */}
+      {!connected && (
+        <div className="nexol-card p-5 border-l-4 border-l-amber flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 text-amber flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-foreground">Wallet Not Connected</p>
+              <p className="text-xs text-muted-foreground">Connect MetaMask or Stellar wallet to deposit, schedule, and sign transactions.</p>
+            </div>
+          </div>
+          <ConnectWalletButton />
+        </div>
+      )}
+
+      {/* Connected wallet mini card */}
+      {connected && walletBalance && (
+        <div className="nexol-card p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-2.5 w-2.5 rounded-full bg-primary animate-pulse flex-shrink-0" />
+            <span className="text-sm text-muted-foreground whitespace-nowrap">Wallet Balance:</span>
+            <span className="font-mono text-sm font-bold text-foreground">{walletBalance} ETH</span>
+          </div>
+          <span className={`text-xs px-2 py-1 rounded-full flex-shrink-0 ${network === 'mainnet' ? 'bg-primary/20 text-primary' : 'bg-amber/20 text-amber'}`}>
+            {network === 'mainnet' ? 'Mainnet' : 'Testnet'}
+          </span>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
