@@ -88,7 +88,7 @@ export default function Scheduler() {
           weekly_amount: weeklyAmount,
           num_weeks: numWeeks,
           start_date: new Date().toISOString(),
-          network,
+          network: 'mainnet',
         },
       });
 
