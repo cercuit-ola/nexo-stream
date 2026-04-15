@@ -80,13 +80,13 @@ export default function Dashboard() {
 
       {/* Connected wallet mini card */}
       {connected && walletBalance && (
-        <div className="nexol-card p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-2.5 w-2.5 rounded-full bg-primary animate-pulse" />
-            <span className="text-sm text-muted-foreground">Stellar Wallet Balance:</span>
-            <span className="font-mono text-sm font-bold text-foreground">{walletBalance} USDC</span>
+        <div className="nexol-card p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-2.5 w-2.5 rounded-full bg-primary animate-pulse flex-shrink-0" />
+            <span className="text-sm text-muted-foreground whitespace-nowrap">Wallet Balance:</span>
+            <span className="font-mono text-sm font-bold text-foreground">{walletBalance} ETH</span>
           </div>
-          <span className={`text-xs px-2 py-1 rounded-full ${network === 'mainnet' ? 'bg-primary/20 text-primary' : 'bg-amber/20 text-amber'}`}>
+          <span className={`text-xs px-2 py-1 rounded-full flex-shrink-0 ${network === 'mainnet' ? 'bg-primary/20 text-primary' : 'bg-amber/20 text-amber'}`}>
             {network === 'mainnet' ? 'Mainnet' : 'Testnet'}
           </span>
         </div>

@@ -129,19 +129,21 @@ export function DashboardLayout() {
               </button>
             )}
           </div>
-          <div className="flex items-center gap-3">
-            <ConnectWalletButton variant="compact" />
-            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${
+          <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
+            <div className="hidden sm:block">
+              <ConnectWalletButton variant="compact" />
+            </div>
+            <span className={`hidden sm:inline-flex items-center rounded-full px-2 sm:px-3 py-1 text-xs font-medium whitespace-nowrap ${
               network === 'mainnet'
                 ? 'bg-primary/20 text-primary'
                 : 'bg-amber/20 text-amber'
             }`}>
               {network === 'mainnet' ? '● Mainnet' : '● Testnet'}
             </span>
-            <button className="relative">
+            <button className="relative flex-shrink-0">
               <Bell className="h-5 w-5 text-muted-foreground" />
             </button>
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-primary text-sm font-bold">
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary text-sm font-bold">
               {user?.email?.[0]?.toUpperCase() ?? 'U'}
             </div>
           </div>

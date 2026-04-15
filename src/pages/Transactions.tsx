@@ -113,7 +113,8 @@ export default function Transactions() {
       </div>
 
       {/* Table */}
-      <div className="nexol-card overflow-hidden">
+      {/* Desktop table */}
+      <div className="nexol-card overflow-hidden hidden md:block">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead><tr className="border-b border-border">
@@ -132,14 +133,14 @@ export default function Transactions() {
                 return (
                   <tr key={t.id} className="border-b border-border/50 hover:bg-secondary/20">
                     <td className="px-4 py-3 text-muted-foreground">{i + 1}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{new Date(t.date).toLocaleDateString()}</td>
+                    <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{new Date(t.date).toLocaleDateString()}</td>
                     <td className="px-4 py-3">
                       <span className={`flex items-center gap-2 ${meta.color}`}>
                         <meta.icon className="h-4 w-4" /> {meta.label}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-foreground">{t.description}</td>
-                    <td className="px-4 py-3 text-right font-mono text-foreground">${t.amount.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-foreground max-w-[200px] truncate">{t.description}</td>
+                    <td className="px-4 py-3 text-right font-mono text-foreground whitespace-nowrap">${t.amount.toFixed(2)}</td>
                     <td className="px-4 py-3">
                       <span className={
                         ['completed', 'approved', 'withdrawn'].includes(t.status) ? 'nexol-badge-success' :
@@ -152,6 +153,33 @@ export default function Transactions() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Mobile card list */}
+      <div className="space-y-3 md:hidden">
+        {filtered.length === 0 ? (
+          <div className="nexol-card p-8 text-center text-muted-foreground">No transactions found</div>
+        ) : filtered.map((t) => {
+          const meta = TYPE_META[t.type];
+          return (
+            <div key={t.id} className="nexol-card p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className={`flex items-center gap-2 text-sm font-medium ${meta.color}`}>
+                  <meta.icon className="h-4 w-4" /> {meta.label}
+                </span>
+                <span className={
+                  ['completed', 'approved', 'withdrawn'].includes(t.status) ? 'nexol-badge-success' :
+                  ['rejected', 'failed'].includes(t.status) ? 'nexol-badge-error' : 'nexol-badge-pending'
+                }>{t.status}</span>
+              </div>
+              <p className="text-sm text-foreground">{t.description}</p>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">{new Date(t.date).toLocaleDateString()}</span>
+                <span className="font-mono text-sm font-bold text-foreground">${t.amount.toFixed(2)}</span>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
