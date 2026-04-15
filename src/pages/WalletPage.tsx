@@ -150,9 +150,9 @@ export default function WalletPage() {
       {!connected ? (
         <div className="nexol-card p-6 text-center space-y-4">
           <Wallet className="h-10 w-10 text-primary mx-auto" />
-          <h3 className="text-lg font-semibold text-foreground">Connect Your Stellar Wallet</h3>
+          <h3 className="text-lg font-semibold text-foreground">Connect Your Wallet</h3>
           <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            Connect your Freighter wallet to view your on-chain balance, deposit funds, and manage transactions.
+            Connect your MetaMask wallet to view your on-chain balance, deposit funds, and manage transactions.
           </p>
           <div className="flex justify-center">
             <ConnectWalletButton />
@@ -185,18 +185,18 @@ export default function WalletPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 overflow-x-auto">
         <button onClick={() => setTab('wallet')}
-          className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${tab === 'wallet' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'}`}>
+          className={`flex-1 min-w-[80px] py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${tab === 'wallet' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'}`}>
           Deposit
         </button>
         <button onClick={() => setTab('convert')}
-          className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${tab === 'convert' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'}`}>
-          Convert & Withdraw
+          className={`flex-1 min-w-[80px] py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${tab === 'convert' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'}`}>
+          Convert
         </button>
         <button onClick={() => setTab('receive')}
-          className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${tab === 'receive' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'}`}>
-          Receive USDC
+          className={`flex-1 min-w-[80px] py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${tab === 'receive' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'}`}>
+          Receive
         </button>
       </div>
 
@@ -206,7 +206,7 @@ export default function WalletPage() {
             <div className="nexol-card p-6 space-y-4">
               <h3 className="text-lg font-semibold text-foreground">Deposit from Wallet</h3>
               <p className="text-sm text-muted-foreground">
-                Deposit USDC from your connected Stellar wallet into NexolPay to use with the scheduler, vault, or off-ramp.
+                Deposit USDC from your connected wallet into NexolPay to use with the scheduler, vault, or off-ramp.
               </p>
               <div>
                 <label className="text-sm text-muted-foreground mb-2 block">Amount (USDC)</label>
@@ -298,7 +298,7 @@ export default function WalletPage() {
             </button>
           )}
           <p className="text-xs text-muted-foreground">
-            Supports USDC on Stellar {network === 'mainnet' ? 'Mainnet' : 'Testnet'}. Credits within 5-15 minutes.
+            Supports USDC on EVM chains. Credits within 5-15 minutes.
           </p>
         </div>
       )}
@@ -306,7 +306,9 @@ export default function WalletPage() {
       {/* Withdrawal History */}
       <div>
         <h3 className="text-lg font-semibold text-foreground mb-3">Withdrawal History</h3>
-        <div className="nexol-card overflow-hidden">
+        
+        {/* Desktop table */}
+        <div className="nexol-card overflow-hidden hidden md:block">
           <table className="w-full text-sm">
             <thead><tr className="border-b border-border">
               <th className="text-left text-muted-foreground font-medium px-4 py-3">Date</th>
@@ -320,7 +322,7 @@ export default function WalletPage() {
                 <tr><td colSpan={5} className="text-center text-muted-foreground py-8">No withdrawals yet</td></tr>
               ) : withdrawals.map((w) => (
                 <tr key={w.id} className="border-b border-border/50">
-                  <td className="px-4 py-3 text-muted-foreground">{new Date(w.created_at).toLocaleDateString()}</td>
+                  <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{new Date(w.created_at).toLocaleDateString()}</td>
                   <td className="px-4 py-3 text-right font-mono">${Number(w.usdc_amount).toFixed(2)}</td>
                   <td className="px-4 py-3 text-right font-mono">₦{Number(w.ngn_amount).toLocaleString()}</td>
                   <td className="px-4 py-3">{w.bank_name}</td>
@@ -333,6 +335,27 @@ export default function WalletPage() {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile card list */}
+        <div className="space-y-3 md:hidden">
+          {withdrawals.length === 0 ? (
+            <div className="nexol-card p-8 text-center text-muted-foreground">No withdrawals yet</div>
+          ) : withdrawals.map((w) => (
+            <div key={w.id} className="nexol-card p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-foreground">{w.bank_name}</span>
+                <span className={w.status === 'completed' ? 'nexol-badge-success' : w.status === 'failed' ? 'nexol-badge-error' : 'nexol-badge-pending'}>
+                  {w.status}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-mono text-foreground">${Number(w.usdc_amount).toFixed(2)}</span>
+                <span className="font-mono text-muted-foreground">₦{Number(w.ngn_amount).toLocaleString()}</span>
+              </div>
+              <span className="text-xs text-muted-foreground">{new Date(w.created_at).toLocaleDateString()}</span>
+            </div>
+          ))}
         </div>
       </div>
 

@@ -108,12 +108,12 @@ export default function Vault() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">NexolPay Vault</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">NexolPay Vault</h1>
           <p className="text-muted-foreground text-sm">Yield-bearing savings with fixed lock periods</p>
         </div>
-        <button onClick={() => setShowModal(true)} className="nexol-btn-primary flex items-center gap-2">
+        <button onClick={() => setShowModal(true)} className="nexol-btn-primary flex items-center gap-2 text-sm w-full sm:w-auto justify-center">
           <Plus className="h-4 w-4" /> Lock New Position
         </button>
       </div>
