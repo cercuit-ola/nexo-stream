@@ -1,27 +1,23 @@
 import { useAuth } from '@/contexts/AuthContext';
-import { useWallet } from '@/contexts/WalletContext';
-import { useStellar } from '@/contexts/StellarContext';
 import { useNavigate } from 'react-router-dom';
-import { Wallet, CalendarClock, Lock, TrendingUp, Gift, ArrowRight, AlertTriangle } from 'lucide-react';
+import { CalendarClock, Lock, TrendingUp, Gift, CreditCard, ArrowRight, DollarSign } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { ConnectWalletButton } from '@/components/ConnectWalletButton';
 
 export default function Dashboard() {
   const { profile, user } = useAuth();
-  const { connected, balance: walletBalance } = useWallet();
-  const { network } = useStellar();
   const navigate = useNavigate();
-  const [stats, setStats] = useState({ scheduled: 0, vaulted: 0, earned: 0, nextPayout: null as Date | null });
+  const [stats, setStats] = useState({ scheduled: 0, vaulted: 0, earned: 0, redeemed: 0, nextPayout: null as Date | null });
 
   useEffect(() => {
     if (!user) return;
 
     const fetchStats = async () => {
-      const [schedulerRes, vaultRes, schedulerTxRes] = await Promise.all([
+      const [schedulerRes, vaultRes, schedulerTxRes, giftCardRes] = await Promise.all([
         supabase.from('scheduler_positions').select('total_amount').eq('user_id', user.id).eq('status', 'active'),
         supabase.from('vault_positions').select('principal_amount, apy_rate, deposit_date').eq('user_id', user.id).eq('status', 'active'),
         supabase.from('scheduler_transactions').select('unlock_timestamp').eq('user_id', user.id).eq('submitted', false).order('unlock_timestamp', { ascending: true }).limit(1),
+        supabase.from('gift_card_redemptions').select('usdt_payout').eq('user_id', user.id).eq('status', 'approved'),
       ]);
 
       const scheduled = schedulerRes.data?.reduce((s, r) => s + Number(r.total_amount), 0) ?? 0;
@@ -30,29 +26,30 @@ export default function Dashboard() {
         const days = (Date.now() - new Date(r.deposit_date).getTime()) / (1000 * 60 * 60 * 24);
         return s + Number(r.principal_amount) * (Number(r.apy_rate) / 100) * (days / 365);
       }, 0) ?? 0;
+      const redeemed = giftCardRes.data?.reduce((s, r) => s + Number(r.usdt_payout), 0) ?? 0;
 
       const nextPayout = schedulerTxRes.data?.[0]
         ? new Date(Number(schedulerTxRes.data[0].unlock_timestamp) * 1000)
         : null;
 
-      setStats({ scheduled, vaulted, earned, nextPayout });
+      setStats({ scheduled, vaulted, earned, redeemed, nextPayout });
     };
 
     fetchStats();
   }, [user]);
 
   const statCards = [
-    { label: 'NexolPay Balance', value: profile?.usdc_balance ?? 0, unit: 'USDC', icon: Wallet, color: 'text-primary' },
-    { label: 'Total Scheduled', value: stats.scheduled, unit: 'in Stellar Escrow', icon: CalendarClock, color: 'text-blue-400' },
+    { label: 'USDT Balance', value: profile?.usdc_balance ?? 0, unit: 'USDT', icon: DollarSign, color: 'text-primary' },
+    { label: 'Total Scheduled', value: stats.scheduled, unit: 'in escrow', icon: CalendarClock, color: 'text-blue-400' },
     { label: 'Total Vaulted', value: stats.vaulted, unit: 'earning yield', icon: Lock, color: 'text-primary' },
-    { label: 'Total Earned', value: stats.earned, unit: 'yield earned', icon: TrendingUp, color: 'text-gold' },
+    { label: 'Gift Cards Redeemed', value: stats.redeemed, unit: 'USDT earned', icon: Gift, color: 'text-gold' },
   ];
 
   const quickActions = [
-    { icon: CalendarClock, title: 'Schedule My Income', desc: 'Split payments weekly', to: '/dashboard/scheduler' },
+    { icon: Gift, title: 'Redeem Gift Card', desc: 'Amazon & Apple → USDT', to: '/dashboard/giftcard' },
+    { icon: CreditCard, title: 'Virtual Card', desc: 'Create & manage virtual USDT cards', to: '/dashboard/virtual-card' },
+    { icon: CalendarClock, title: 'Schedule Income', desc: 'Split payments weekly', to: '/dashboard/scheduler' },
     { icon: Lock, title: 'Lock in Vault', desc: 'Earn 5.2% to 12.5% APY', to: '/dashboard/vault' },
-    { icon: Wallet, title: 'Convert to Naira', desc: 'USDC → NGN to your bank', to: '/dashboard/wallet' },
-    { icon: Gift, title: 'Redeem Gift Card', desc: 'Amazon & Apple → USDC', to: '/dashboard/giftcard' },
   ];
 
   return (
@@ -63,34 +60,6 @@ export default function Dashboard() {
           <p className="text-muted-foreground text-sm">Here's your NexolPay overview</p>
         </div>
       </div>
-
-      {/* Wallet connection prompt */}
-      {!connected && (
-        <div className="nexol-card p-5 border-l-4 border-l-amber flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <AlertTriangle className="h-5 w-5 text-amber flex-shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-foreground">Wallet Not Connected</p>
-              <p className="text-xs text-muted-foreground">Connect your wallet to deposit, schedule, and sign transactions.</p>
-            </div>
-          </div>
-          <ConnectWalletButton />
-        </div>
-      )}
-
-      {/* Connected wallet mini card */}
-      {connected && walletBalance && (
-        <div className="nexol-card p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="h-2.5 w-2.5 rounded-full bg-primary animate-pulse flex-shrink-0" />
-            <span className="text-sm text-muted-foreground whitespace-nowrap">Wallet Balance:</span>
-            <span className="font-mono text-sm font-bold text-foreground">{walletBalance} ETH</span>
-          </div>
-          <span className={`text-xs px-2 py-1 rounded-full flex-shrink-0 ${network === 'mainnet' ? 'bg-primary/20 text-primary' : 'bg-amber/20 text-amber'}`}>
-            {network === 'mainnet' ? 'Mainnet' : 'Testnet'}
-          </span>
-        </div>
-      )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
