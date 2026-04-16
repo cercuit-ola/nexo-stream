@@ -2,7 +2,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useWallet } from '@/contexts/WalletContext';
 import { useStellar } from '@/contexts/StellarContext';
 import { useNavigate } from 'react-router-dom';
-import { CalendarClock, Lock, TrendingUp, Gift, CreditCard, ArrowRight, AlertTriangle, DollarSign } from 'lucide-react';
+import { CalendarClock, Lock, TrendingUp, Gift, CreditCard, ArrowRight, DollarSign, X, Sparkles, Clock, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { ConnectWalletButton } from '@/components/ConnectWalletButton';
@@ -13,6 +13,11 @@ export default function Dashboard() {
   const { network } = useStellar();
   const navigate = useNavigate();
   const [stats, setStats] = useState({ scheduled: 0, vaulted: 0, earned: 0, redeemed: 0, nextPayout: null as Date | null });
+  const [showStory, setShowStory] = useState(() => {
+    return localStorage.getItem('nexol-story-dismissed') !== 'true';
+  });
+
+  const displayName = profile?.display_name || user?.email?.split('@')[0] || 'there';
 
   useEffect(() => {
     if (!user) return;
@@ -43,38 +48,77 @@ export default function Dashboard() {
     fetchStats();
   }, [user]);
 
+  const dismissStory = () => {
+    setShowStory(false);
+    localStorage.setItem('nexol-story-dismissed', 'true');
+  };
+
   const statCards = [
-    { label: 'USDT Balance', value: profile?.usdc_balance ?? 0, unit: 'USDT', icon: DollarSign, color: 'text-primary' },
-    { label: 'Total Scheduled', value: stats.scheduled, unit: 'in escrow', icon: CalendarClock, color: 'text-blue-400' },
-    { label: 'Total Vaulted', value: stats.vaulted, unit: 'earning yield', icon: Lock, color: 'text-primary' },
-    { label: 'Gift Cards Redeemed', value: stats.redeemed, unit: 'USDT earned', icon: Gift, color: 'text-gold' },
+    { label: 'Wallet Balance', value: profile?.usdc_balance ?? 0, unit: 'USDC', icon: DollarSign, color: 'text-primary' },
+    { label: 'Total Locked', value: stats.vaulted, unit: 'in Vault', icon: Lock, color: 'text-blue-400' },
+    { label: 'Total Earned', value: stats.earned, unit: 'yield', icon: TrendingUp, color: 'text-primary' },
   ];
 
   const quickActions = [
-    { icon: Gift, title: 'Redeem Gift Card', desc: 'Amazon & Apple → USDT', to: '/dashboard/giftcard' },
-    { icon: CreditCard, title: 'Virtual Card', desc: 'Create & manage virtual USDT cards', to: '/dashboard/virtual-card' },
-    { icon: CalendarClock, title: 'Schedule Income', desc: 'Split payments weekly', to: '/dashboard/scheduler' },
-    { icon: Lock, title: 'Lock in Vault', desc: 'Earn 5.2% to 12.5% APY', to: '/dashboard/vault' },
+    { icon: Gift, title: 'Redeem Gift Card', desc: 'Amazon & Apple → USDC', to: '/dashboard/giftcard' },
+    { icon: CalendarClock, title: 'Schedule Payment', desc: 'One-time or recurring', to: '/dashboard/scheduler' },
+    { icon: Lock, title: 'Vault Deposit', desc: 'Earn up to 10% APY', to: '/dashboard/vault' },
+    { icon: CreditCard, title: 'Virtual Card', desc: 'Spend USDT anywhere', to: '/dashboard/virtual-card' },
   ];
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Welcome back 👋</h1>
-          <p className="text-muted-foreground text-sm">Here's your NexolPay overview</p>
+    <div className="space-y-6">
+      {/* User Story Popup Card */}
+      {showStory && (
+        <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-card via-card to-primary/5 p-5 sm:p-6">
+          <button
+            onClick={dismissStory}
+            className="absolute top-3 right-3 p-1.5 rounded-full bg-muted/30 hover:bg-muted/60 transition-colors z-10"
+          >
+            <X className="h-4 w-4 text-muted-foreground" />
+          </button>
+          <div className="flex flex-col sm:flex-row gap-4 items-start">
+            <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Sparkles className="h-6 w-6 text-primary" />
+            </div>
+            <div className="space-y-2 pr-8 sm:pr-4">
+              <h3 className="text-base font-semibold text-foreground">Why NexolPay?</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                <span className="text-foreground font-medium">Meet Tunde</span> — a freelancer in Lagos who gets paid in gift cards.
+                With NexolPay, he converts them to USDC instantly, schedules weekly payouts to his bank, and locks spare funds
+                in the Vault earning <span className="text-primary font-medium">up to 10% APY</span>. No middlemen. No delays.
+                Just your money, working for you.
+              </p>
+              <div className="flex flex-wrap gap-3 pt-1">
+                <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/20 px-2.5 py-1 rounded-full">
+                  <Clock className="h-3 w-3" /> Auto-schedule payouts
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/20 px-2.5 py-1 rounded-full">
+                  <Zap className="h-3 w-3" /> Instant gift card conversion
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/20 px-2.5 py-1 rounded-full">
+                  <TrendingUp className="h-3 w-3" /> Earn yield on idle funds
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
+      )}
+
+      {/* Greeting */}
+      <div>
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground">
+          Welcome back, <span className="text-primary">{displayName}</span> 👋
+        </h1>
+        <p className="text-muted-foreground text-sm mt-0.5">Here's your NexolPay overview</p>
       </div>
 
       {/* Wallet connection prompt */}
       {!connected && (
-        <div className="nexol-card p-5 border-l-4 border-l-amber flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <AlertTriangle className="h-5 w-5 text-amber flex-shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-foreground">Wallet Not Connected</p>
-              <p className="text-xs text-muted-foreground">Connect MetaMask or Stellar wallet to deposit, schedule, and sign transactions.</p>
-            </div>
+        <div className="nexol-card p-4 border-l-4 border-l-amber flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-2 w-2 rounded-full bg-amber animate-pulse flex-shrink-0" />
+            <p className="text-sm text-muted-foreground">Connect your wallet to unlock full features</p>
           </div>
           <ConnectWalletButton />
         </div>
@@ -82,20 +126,20 @@ export default function Dashboard() {
 
       {/* Connected wallet mini card */}
       {connected && walletBalance && (
-        <div className="nexol-card p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <div className="nexol-card p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0">
             <div className="h-2.5 w-2.5 rounded-full bg-primary animate-pulse flex-shrink-0" />
-            <span className="text-sm text-muted-foreground whitespace-nowrap">Wallet Balance:</span>
+            <span className="text-sm text-muted-foreground">Wallet:</span>
             <span className="font-mono text-sm font-bold text-foreground">{walletBalance} ETH</span>
           </div>
-          <span className={`text-xs px-2 py-1 rounded-full flex-shrink-0 ${network === 'mainnet' ? 'bg-primary/20 text-primary' : 'bg-amber/20 text-amber'}`}>
+          <span className={`text-xs px-2 py-1 rounded-full ${network === 'mainnet' ? 'bg-primary/20 text-primary' : 'bg-amber/20 text-amber'}`}>
             {network === 'mainnet' ? 'Mainnet' : 'Testnet'}
           </span>
         </div>
       )}
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {statCards.map((card) => (
           <div key={card.label} className="nexol-stat-card">
             <div className="flex items-center justify-between mb-3">
@@ -110,30 +154,48 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Next Payout */}
-      {stats.nextPayout && (
-        <div className="nexol-card p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <CalendarClock className="h-5 w-5 text-primary" />
-            <span className="text-sm text-muted-foreground">Next Scheduled Payout:</span>
+      {/* Scheduler Highlight Card */}
+      <button
+        onClick={() => navigate('/dashboard/scheduler')}
+        className="w-full text-left nexol-card p-5 border border-primary/20 hover:border-primary/40 transition-all group relative overflow-hidden"
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent pointer-events-none" />
+        <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-4">
+            <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <CalendarClock className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground">Income & Payment Scheduler</h3>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {stats.scheduled > 0
+                  ? `$${stats.scheduled.toFixed(2)} in escrow · ${stats.nextPayout ? `Next payout ${stats.nextPayout.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}` : 'Active'}`
+                  : 'Automate weekly payouts & split income effortlessly'}
+              </p>
+            </div>
           </div>
-          <span className="font-mono text-sm font-bold text-foreground">
-            {stats.nextPayout.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-          </span>
+          <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
         </div>
-      )}
+      </button>
 
       {/* Quick Actions */}
       <div>
-        <h2 className="text-lg font-semibold text-foreground mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <h2 className="text-base font-semibold text-foreground mb-3">Quick Actions</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {quickActions.map((action) => (
-            <button key={action.title} onClick={() => navigate(action.to)}
-              className="nexol-card p-5 text-left hover:border-primary/30 transition-colors group cursor-pointer">
-              <action.icon className="h-8 w-8 text-primary mb-3" />
-              <h3 className="font-semibold text-foreground text-sm mb-1">{action.title}</h3>
-              <p className="text-xs text-muted-foreground">{action.desc}</p>
-              <ArrowRight className="h-4 w-4 text-muted-foreground mt-3 group-hover:text-primary transition-colors" />
+            <button
+              key={action.title}
+              onClick={() => navigate(action.to)}
+              className="nexol-card p-4 text-left hover:border-primary/30 transition-colors group flex items-center gap-4"
+            >
+              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <action.icon className="h-5 w-5 text-primary" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-semibold text-foreground text-sm">{action.title}</h3>
+                <p className="text-xs text-muted-foreground">{action.desc}</p>
+              </div>
+              <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0 hidden sm:block" />
             </button>
           ))}
         </div>
