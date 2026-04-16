@@ -298,6 +298,7 @@ export type Database = {
           nin: string | null
           phone: string | null
           usdc_balance: number | null
+          wallet_address: string | null
         }
         Insert: {
           bvn?: string | null
@@ -310,6 +311,7 @@ export type Database = {
           nin?: string | null
           phone?: string | null
           usdc_balance?: number | null
+          wallet_address?: string | null
         }
         Update: {
           bvn?: string | null
@@ -322,6 +324,7 @@ export type Database = {
           nin?: string | null
           phone?: string | null
           usdc_balance?: number | null
+          wallet_address?: string | null
         }
         Relationships: []
       }
