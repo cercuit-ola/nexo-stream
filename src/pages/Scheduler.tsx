@@ -80,9 +80,10 @@ export default function Scheduler() {
     setError(null);
 
     try {
+      if (!user) throw new Error('Not authenticated');
       const { data, error: fnError } = await supabase.functions.invoke('create-stellar-schedule', {
         body: {
-          user_id: user!.id,
+          user_id: user.id,
           wallet_address: address,
           type: tab,
           total_amount: Number(amount),
