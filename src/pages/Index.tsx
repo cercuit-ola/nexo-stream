@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Gift, DollarSign, Lock, Check, Twitter, Linkedin } from 'lucide-react';
+import { Gift, DollarSign, Lock, Check, Twitter as TwitterIcon, Linkedin as LinkedinIcon } from 'lucide-react';
 import nexolLogo from '@/assets/nexolpay-logo.png';
 
 const Index = () => {
