@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Gift, DollarSign, Lock, Check, Twitter, Linkedin } from 'lucide-react';
+import { Gift, DollarSign, Lock, Check } from 'lucide-react';
 import nexolLogo from '@/assets/nexolpay-logo.png';
 
 const Index = () => {
@@ -206,11 +206,11 @@ const Index = () => {
               The all-in-one financial dashboard for the modern digital era. Built on Base for speed, security, and low fees.
             </p>
             <div className="flex gap-3 mt-4">
-              <a href="#" className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-500 hover:text-emerald-500">
-                <Twitter className="w-4 h-4" />
+              <a href="#" className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-500 hover:text-emerald-500 text-xs font-bold">
+                𝕏
               </a>
-              <a href="#" className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-500 hover:text-emerald-500">
-                <Linkedin className="w-4 h-4" />
+              <a href="#" className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-500 hover:text-emerald-500 text-xs font-bold">
+                in
               </a>
             </div>
           </div>
