@@ -23,6 +23,7 @@ import Contracts from "@/pages/Contracts";
 import ContractDetail from "@/pages/ContractDetail";
 import PublicContractFunding from "@/pages/PublicContractFunding";
 import NotFound from "@/pages/NotFound";
+import Index from "@/pages/Index";
 
 const queryClient = new QueryClient();
 
@@ -36,7 +37,7 @@ const App = () => (
           <StellarProvider>
             <WalletProvider>
               <Routes>
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
