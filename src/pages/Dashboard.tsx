@@ -80,8 +80,8 @@ export default function Dashboard() {
               <h3 className="text-base font-semibold text-foreground">Why NexolPay?</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 <span className="text-foreground font-medium">Meet Tunde</span> — a freelancer in Lagos who gets paid in gift cards.
-                With NexolPay, he converts them to USDC instantly, schedules weekly payouts to his bank, and locks spare funds
-                in the Vault earning <span className="text-primary font-medium">up to 10% APY</span>. No middlemen. No delays.
+                With NexolPay, he converts them to USDC instantly, schedules weekly payouts to his bank, and secures
+                client work through <span className="text-primary font-medium">freelancer escrow</span>. No middlemen. No delays.
                 Just your money, working for you.
               </p>
               <div className="flex flex-wrap gap-3 pt-1">
