@@ -14,9 +14,7 @@ import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
 import Dashboard from "@/pages/Dashboard";
 import Scheduler from "@/pages/Scheduler";
-import Vault from "@/pages/Vault";
 import GiftCard from "@/pages/GiftCard";
-import VirtualCard from "@/pages/VirtualCard";
 import Transactions from "@/pages/Transactions";
 import SettingsPage from "@/pages/SettingsPage";
 import Contracts from "@/pages/Contracts";
@@ -46,11 +44,9 @@ const App = () => (
                 <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
                   <Route index element={<Dashboard />} />
                   <Route path="scheduler" element={<Scheduler />} />
-                  <Route path="vault" element={<Vault />} />
                   <Route path="contracts" element={<Contracts />} />
                   <Route path="contracts/:id" element={<ContractDetail />} />
                   <Route path="giftcard" element={<GiftCard />} />
-                  <Route path="virtual-card" element={<VirtualCard />} />
                   <Route path="transactions" element={<Transactions />} />
                   <Route path="settings" element={<SettingsPage />} />
                 </Route>
